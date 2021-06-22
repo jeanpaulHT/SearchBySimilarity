@@ -1,0 +1,141 @@
+---
+title: "R Notebook"
+output:
+  html_document:
+    df_print: paged
+---
+
+Usando la colección de datos iris vamos a proceder análizar como se comporta la distancia Euclediana entre dos puntos aleatorios del espacio vectorial.
+
+
+```{r}
+library(dplyr)
+iris
+```
+
+Para ello vamos a definir primero la función distancia aplicado a dos vectores multidimensionales.
+
+```{r}
+ED <- function(X, Y){
+  return(sqrt(sum((X - Y)^2)))
+}
+```
+
+
+También se requiere una función para calcular la distancia entre N pares de puntos y almacenarlos en un array.
+
+```{r}
+genDistancias<-function(data, N){
+  v<-rep(0, N)
+  for (i in 1:N) {
+    ind<-sample(1:nrow(data), size=2)
+    P<-data[ind[1], ]
+    Q<-data[ind[2], ]
+    v[i]<-ED(P, Q)
+  }
+  return(v)
+}
+```
+
+
+
+Generamos 5000 distancias aleatorias y procedemos a visualizar los resultados en un histograma,
+
+```{r}
+D<-genDistancias(iris[, 1:4], 5000)
+#generamos el histograma
+H<-hist(D, xlab = "Distancia", breaks = 10)
+```
+
+
+
+Para poder saber que radio usar en las búsquedas por rango, podemos guiarnos del porcentaje de elementos que cubre la distancia conforme va creciendo.
+
+```{r}
+#porcentaje de cobertura
+for (i in 1:(length(H$counts)-1)) {
+  print(paste("Radio <=" , H$breaks[i+1],": ", round(100*sum(H$counts[1:i])/sum(H$counts)), "%"))
+}
+```
+
+De los radios resultantes de arriba escogeremos 3:
+
+1) 1
+2) 2.5
+3) 5
+
+
+```{r}
+rangeSearch <- function(Q, r){
+  result <- iris[FALSE,]
+  for(i in 1:nrow(iris_temp)) {
+      row <- iris_temp[i,1:4]
+      if (ED(Q[1:4], row[1:4]) < r ){
+        row$r = ED(Q[1:4], row[1:4])
+        result <- rbind(result,row)
+      }
+  }
+  return (result)
+}
+```
+
+
+
+```{r}
+q <- iris[15,1:ncol(iris)]
+print(q)
+```
+
+```{r}
+radious <- c(1 , 2.5, 5)
+Queries <- c(15,82,121)
+
+for (i in 1:3){
+  for(q in 1:3){
+    iris_temp <- iris[-c(Queries[q]),]
+    res <- rangeSearch(iris[Queries[q],] , radious[i])
+    print(nrow(res))
+    print(res[0])
+  }
+}
+```
+
+
+
+
+```{r}
+KnnSearch <- function(Q, k){
+  result <- iris[FALSE,]
+  for(i in 1:nrow(iris_temp)) {
+      row <- iris_temp[i,1:4]
+      row$dist <- ED(Q[1:4], row[1:4])
+      result <- rbind(result,row)
+  }
+  
+  ordered_result <- result[order(-result$dist),]
+  return (ordered_result[1:k,])
+}
+
+```
+
+
+```{r}
+kn <- c(2, 4, 8, 16, 32)
+Queries <- c(15, 82, 121)
+
+for (i in 1:5){
+  for(q in 1:3){
+    iris_temp <- iris[-c(Queries[q]),]
+    res <- KnnSearch(iris[Queries[q],] , kn[i])
+    print(res[0] )
+  }
+}
+```
+
+
+
+
+
+
+
+
